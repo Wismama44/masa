@@ -3,7 +3,10 @@
 <head>
 <base target="_top">
 <meta charset="utf-8">
-  <title>המסע שלי – עבודת שורשים</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f1e6">
+<meta name="apple-mobile-web-app-title" content="המסע שלי">
+<title>המסע שלי – עבודת שורשים</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -110,14 +113,24 @@
   .req .what { font-size: 19px; margin: 4px 0 12px; }
 
   /* sheet */
-  .veil { position: fixed; inset: 0; background: rgba(43,38,33,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
-  .sheet { background: var(--card); width: 100%; max-width: 560px; border-radius: 22px 22px 0 0; padding: 20px 16px 24px; max-height: 92vh; overflow: auto; animation: up .25s ease; }
-  @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  /* Request dialog: opens at the TOP of the screen so it is always visible on phones,
+     even when the on-screen keyboard is open. */
+  .veil { position: fixed; inset: 0; background: rgba(43,38,33,.55); display: flex; align-items: flex-start; justify-content: center;
+          z-index: 10; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: max(12px, env(safe-area-inset-top)) 12px 24px; }
+  .sheet { background: var(--card); width: 100%; max-width: 560px; border-radius: 20px; padding: 18px 16px 20px;
+           box-shadow: 0 10px 30px rgba(0,0,0,.25); animation: down .22s ease; }
+  .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .sheet-head h2 { margin: 0; }
+  .close-x { background: var(--bg); color: var(--ink); border: none; border-radius: 99px; width: 44px; height: 44px; min-height: 44px; padding: 0; font-size: 22px; flex: none; }
+  @media (min-width: 700px) { .veil { align-items: center; } }
+  @keyframes down { from { transform: translateY(-24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  body.locked { overflow: hidden; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
   .chip { font-size: 16px; padding: 9px 13px; min-height: 44px; border-radius: 99px; background: #fff; color: var(--ink); border: 2px solid var(--line); }
   .chip[aria-pressed=true] { border-color: var(--green); background: var(--green-soft); }
 
-  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; z-index: 20; font-size: 16px; max-width: 90vw; }
+  .toast { position: fixed; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; z-index: 20; font-size: 16px; max-width: 90vw; }
   .err { background: var(--red-soft); color: var(--red); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
 
   .loading { text-align: center; padding: 80px 0; color: var(--muted); }
@@ -146,6 +159,7 @@
   // Backend (Google Apps Script). Inside Google we use google.script.run; elsewhere (GitHub Pages) we POST JSON.
   var API_URL = 'https://script.google.com/macros/s/AKfycbywJk5Q5hHRYQLgmWrMUwoPKB4dw9ybKzSMvv4w1RjlF3AXSrwynwEVyf4VzQpHaYgZ/exec';
   var GAS = typeof google !== 'undefined' && google.script && google.script.run;
+  var TOUCH = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
 
   /* ── helpers ── */
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -406,7 +420,8 @@
     S.plan.forEach(function (p) { p.steps.forEach(function (s) { if (s.id === stepId) step = s; }); });
     var veil = document.createElement('div'); veil.className = 'veil';
     var h = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="askT">' +
-      '<h2 id="askT" style="margin-top:0">🏠 מה צריך מהבית?</h2>';
+      '<div class="sheet-head"><h2 id="askT" tabindex="-1">🏠 מה צריך מהבית?</h2>' +
+      '<button type="button" class="close-x" id="askX" aria-label="סגירה">✕</button></div>';
     if (step) h += '<p class="muted" style="font-size:15px">בשביל השלב: ' + esc(step.text) + '</p>';
     else {
       h += '<div class="chips">';
@@ -419,16 +434,27 @@
       '<p class="muted" style="font-size:14px">ההורים יקבלו מייל עם הבקשה.</p></div>';
     veil.innerHTML = h;
     document.body.appendChild(veil);
+    document.body.classList.add('locked');
+    var opener = document.activeElement;
     var tx = veil.querySelector('#askTx');
-    function close() { veil.remove(); }
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    function close() {
+      veil.remove(); document.body.classList.remove('locked'); document.removeEventListener('keydown', onKey);
+      if (opener && opener.focus && document.body.contains(opener)) opener.focus();
+    }
+    document.addEventListener('keydown', onKey);
     veil.onclick = function (e) { if (e.target === veil) close(); };
     veil.querySelector('#askNo').onclick = close;
+    veil.querySelector('#askX').onclick = close;
+    // when the phone keyboard opens, keep the text box and the send button in view
+    tx.addEventListener('focus', function () { setTimeout(function () { tx.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 300); });
     veil.querySelectorAll('[data-chip]').forEach(function (c) {
       c.onclick = function () {
         veil.querySelectorAll('[data-chip]').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
         c.setAttribute('aria-pressed', 'true');
         var label = CHIPS[Number(c.getAttribute('data-chip'))][1];
-        tx.value = label + ': '; tx.focus();
+        tx.value = label + ': ';
+        if (!TOUCH) tx.focus();
       };
     });
     veil.querySelector('#askGo').onclick = function () {
@@ -439,7 +465,8 @@
         S.requests.unshift(r); close(); var keep = openParts(); renderKid(keep); toast('נשלח להורים ✓');
       }, function (e) { b.disabled = false; b.textContent = 'לשלוח להורים 📨'; toast(errText(e)); });
     };
-    setTimeout(function () { (step ? tx : veil.querySelector('.chip') || tx).focus(); }, 50);
+    // On phones don't pop the keyboard right away (it would hide the dialog); focus the title for screen readers.
+    setTimeout(function () { (TOUCH ? veil.querySelector('#askT') : (step ? tx : veil.querySelector('.chip') || tx)).focus({ preventScroll: true }); }, 50);
   }
 
   /* ═════════════ PARENT ═════════════ */
