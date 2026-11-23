@@ -240,11 +240,40 @@
   });
 
   /* ═════════════ SIGNUP ═════════════ */
+  /* ── remember this device (per-viewer convenience only) ── */
+  function savedList() { try { return JSON.parse(localStorage.getItem('masa_saved') || '[]'); } catch (e) { return []; } }
+  function remember(t, token, name) {
+    try {
+      var l = savedList().filter(function (x) { return x.token !== token; });
+      l.unshift({ t: t, token: token, name: name });
+      localStorage.setItem('masa_saved', JSON.stringify(l.slice(0, 6)));
+    } catch (e) {}
+  }
+  function forget(token) {
+    try { localStorage.setItem('masa_saved', JSON.stringify(savedList().filter(function (x) { return x.token !== token; }))); } catch (e) {}
+  }
+  function goTo(t, token) {
+    if (!GAS) { location.href = '?' + t + '=' + token; return; }
+    TOKEN = token;
+    if (t === 'k') { MODE = 'kid'; loadKid(); } else { MODE = 'parent'; loadParent(); }
+  }
+
   function renderSignup() {
+    var saved = savedList();
+    var savedHtml = '';
+    if (saved.length) {
+      savedHtml = '<div class="card"><p><b>להמשיך מאיפה שהפסקתם:</b></p>';
+      saved.forEach(function (s, i) {
+        var label = s.t === 'k' ? '🧒 המסע של ' + esc(s.name) : '🔑 הדף שלי (הורה של ' + esc(s.name) + ')';
+        savedHtml += '<button class="wide' + (i ? ' ghost' : '') + '" style="margin-top:10px" data-go="' + i + '">' + label + '</button>';
+      });
+      savedHtml += '<p class="center" style="margin:12px 0 0"><button class="link" id="forgetAll" style="font-size:15px">זה לא המכשיר שלי – לשכוח</button></p></div>';
+    }
     app.innerHTML =
       '<div class="center"><div class="tree">🌳</div></div>' +
       '<h1 class="center">המסע שלי</h1>' +
       '<p class="sub center">מעקב עבודת השורשים – שכבה ז׳</p>' +
+      savedHtml +
       '<div class="card">' +
         '<p><b>איך זה עובד?</b></p>' +
         '<p>1. כותבים כאן מייל ואת השם של הילד/ה.</p>' +
@@ -259,7 +288,39 @@
         '<div id="ferr"></div>' +
         '<button class="wide" style="margin-top:18px" id="go">שלחו לי את הקישורים</button>' +
         '<p class="muted" style="font-size:14px;margin-top:14px">נשמרים רק המייל והשם הפרטי, ורק כדי לשלוח לכם עדכונים על העבודה. לא משתפים אותם עם אף אחד.</p>' +
-      '</form>';
+      '</form>' +
+      '<div class="card center">' +
+        '<p style="margin:0"><b>כבר נרשמתם? / שכחתי את הקישור</b></p>' +
+        '<p class="muted" style="font-size:15px;margin:6px 0 0">ילדים: כתבו את המייל של אמא או אבא, והקישור שלכם יגיע אליהם.</p>' +
+        '<button class="ghost wide" style="margin-top:10px" id="againOpen">לקבל שוב את הקישורים למייל</button>' +
+        '<form id="againForm" class="hidden" novalidate style="text-align:right">' +
+          '<label class="field" for="em2">המייל של ההורה (זה שאיתו נרשמתם)</label>' +
+          '<input id="em2" type="email" inputmode="email" autocomplete="email" dir="ltr" placeholder="name@gmail.com">' +
+          '<div id="aerr"></div>' +
+          '<button class="wide" style="margin-top:14px" id="againGo">שלחו לי שוב</button>' +
+        '</form>' +
+      '</div>';
+    app.querySelectorAll('[data-go]').forEach(function (b) {
+      b.onclick = function () { var s = saved[Number(b.getAttribute('data-go'))]; goTo(s.t, s.token); };
+    });
+    var fa = document.getElementById('forgetAll');
+    if (fa) fa.onclick = function () { try { localStorage.removeItem('masa_saved'); } catch (e) {} renderSignup(); };
+    document.getElementById('againOpen').onclick = function () {
+      this.classList.add('hidden'); var f = document.getElementById('againForm'); f.classList.remove('hidden'); document.getElementById('em2').focus();
+    };
+    document.getElementById('againForm').onsubmit = function (ev) {
+      ev.preventDefault();
+      var em = document.getElementById('em2').value.trim(), ae = document.getElementById('aerr'); ae.innerHTML = '';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { ae.innerHTML = '<div class="err">כתובת המייל לא נראית תקינה</div>'; return; }
+      var b = document.getElementById('againGo'); b.disabled = true; b.textContent = 'שולח...';
+      call('resendByEmail', em).then(function () {
+        app.innerHTML = '<div class="center"><div class="tree">📬</div><h1>בדקו את המייל</h1>' +
+          '<p>אם <b dir="ltr">' + esc(em) + '</b> רשום אצלנו, שלחנו אליו עכשיו את הקישורים של כל הילדים.</p>' +
+          '<p class="muted">לא הגיע תוך כמה דקות? כדאי להציץ בספאם / קידומי מכירות.</p>' +
+          '<button class="ghost" id="back" style="margin-top:14px">חזרה</button></div>';
+        document.getElementById('back').onclick = renderSignup;
+      }, function (e) { ae.innerHTML = '<div class="err">' + esc(errText(e)) + '</div>'; b.disabled = false; b.textContent = 'שלחו לי שוב'; });
+    };
     document.getElementById('f').onsubmit = function (ev) {
       ev.preventDefault();
       var em = document.getElementById('em').value.trim(), kn = document.getElementById('kn').value.trim();
@@ -274,6 +335,14 @@
   }
 
   function renderSignedUp(r, em) {
+    if (r.existing) {
+      app.innerHTML =
+        '<div class="center"><div class="tree">📬</div><h1>כבר רשומים 🙂</h1>' +
+        '<p>שלחנו שוב ל־<b dir="ltr">' + esc(em) + '</b> את הקישורים.</p>' +
+        '<p class="muted">לא הגיע? כדאי להציץ בתיקיית הספאם / קידומי מכירות.</p></div>';
+      return;
+    }
+    remember('p', r.parentToken, r.kidName);
     app.innerHTML =
       '<div class="center"><div class="tree">📬</div><h1>מעולה!</h1>' +
       '<p>שלחנו ל־<b dir="ltr">' + esc(em) + '</b> מייל עם שני הקישורים.</p>' +
@@ -288,7 +357,8 @@
 
   /* ═════════════ KID ═════════════ */
   function loadKid() {
-    call('getKid', TOKEN).then(function (d) { S = d; renderKid(); }, function (e) { showError(errText(e)); });
+    call('getKid', TOKEN).then(function (d) { S = d; remember('k', TOKEN, d.kidName); renderKid(); },
+      function (e) { if (/הקישור לא תקין/.test(errText(e))) forget(TOKEN); showError(errText(e)); });
   }
 
   function reqForStep(id) {
@@ -472,7 +542,8 @@
   /* ═════════════ PARENT ═════════════ */
   function loadParent() {
     app.innerHTML = '<div class="loading"><div class="tree">🌳</div><p>טוען...</p></div>';
-    call('getParent', TOKEN).then(function (d) { S = d; renderParent(); }, function (e) { showError(errText(e)); });
+    call('getParent', TOKEN).then(function (d) { S = d; remember('p', TOKEN, d.kidName); renderParent(); },
+      function (e) { if (/הקישור לא תקין/.test(errText(e))) forget(TOKEN); showError(errText(e)); });
   }
 
   function renderParent() {
