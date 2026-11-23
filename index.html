@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f1e6;
+    --card: #fffdf8;
+    --ink: #2b2621;
+    --muted: #6b6257;
+    --line: #e6dccb;
+    --green: #2f6b4f;
+    --green-soft: #e3efe7;
+    --gold: #c08a2e;
+    --gold-soft: #fbf1dc;
+    --red: #b4472f;
+    --red-soft: #fbe7e1;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Rubik', Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 28px; margin: 6px 0 4px; line-height: 1.25; }
+  h2 { font-size: 21px; margin: 28px 0 10px; }
+  p { margin: 8px 0; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin: 12px 0;
+  }
+  label.field { display: block; font-weight: 500; margin: 14px 0 6px; }
+  input[type=text], input[type=email], input[type=date], textarea {
+    width: 100%; font: inherit; font-size: 18px; padding: 13px 14px; border-radius: 12px;
+    border: 2px solid var(--line); background: #fff; color: var(--ink);
+  }
+  input:focus, textarea:focus, button:focus-visible, summary:focus-visible, a:focus-visible {
+    outline: 3px solid var(--gold); outline-offset: 2px;
+  }
+  textarea { min-height: 96px; resize: vertical; }
+  button, .btn {
+    font: inherit; font-weight: 500; font-size: 18px; cursor: pointer; border-radius: 14px;
+    padding: 14px 18px; border: 2px solid var(--green); background: var(--green); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    text-decoration: none; min-height: 52px; text-align: center;
+  }
+  button.ghost, .btn.ghost { background: #fff; color: var(--green); }
+  button.small { font-size: 15px; padding: 8px 12px; min-height: 40px; border-radius: 10px; }
+  button.link { background: none; border: none; color: var(--green); padding: 6px; min-height: 0; text-decoration: underline; }
+  button:disabled { opacity: .55; cursor: default; }
+  .wide { width: 100%; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .center { text-align: center; }
+  .muted { color: var(--muted); }
+  .hidden { display: none !important; }
+
+  .bar { height: 12px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--green); border-radius: 99px; transition: width .4s; }
+
+  /* part cards */
+  details.part { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); margin: 14px 0; overflow: hidden; }
+  details.part > summary { list-style: none; cursor: pointer; padding: 16px; }
+  details.part > summary::-webkit-details-marker { display: none; }
+  .part-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .part-title { font-weight: 700; font-size: 19px; }
+  .chev { transition: transform .2s; color: var(--muted); flex: none; }
+  details[open] .chev { transform: rotate(180deg); }
+  .part-meta { display: flex; gap: 8px; align-items: center; margin: 8px 0 10px; flex-wrap: wrap; font-size: 15px; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 15px; font-weight: 500; background: var(--green-soft); color: var(--green); }
+  .badge.soon { background: var(--gold-soft); color: #8a5d12; }
+  .badge.late { background: var(--red-soft); color: var(--red); }
+  .badge.done { background: var(--green); color: #fff; }
+  .part-body { padding: 0 16px 16px; border-top: 1px solid var(--line); }
+  .note { background: var(--gold-soft); border-radius: 12px; padding: 12px 14px; margin: 14px 0 4px; }
+
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+  .step:last-of-type { border-bottom: none; }
+  .step input[type=checkbox] { width: 30px; height: 30px; margin: 0; flex: none; accent-color: var(--green); cursor: pointer; }
+  .step .txt { flex: 1; }
+  .step.is-done .txt > span:first-child { color: var(--muted); text-decoration: line-through; }
+  .step .tools { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .home-btn { font-size: 15px; padding: 7px 12px; min-height: 40px; border-radius: 99px; background: var(--gold-soft); color: #7a5210; border: 2px solid #ecd3a3; }
+  .req-state { font-size: 14px; padding: 4px 10px; border-radius: 99px; background: var(--gold-soft); color: #7a5210; }
+  .req-state.ok { background: var(--green-soft); color: var(--green); }
+  .mine { font-size: 13px; color: var(--muted); }
+  .x { background: none; border: none; color: var(--muted); font-size: 22px; padding: 0 6px; min-height: 0; }
+  .add-own { margin-top: 10px; }
+  .add-own .row input { flex: 1; min-width: 0; }
+
+  .cheer { background: var(--green); color: #fff; border-radius: 12px; padding: 12px 14px; margin-top: 12px; font-weight: 500; animation: pop .4s ease; }
+  @keyframes pop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .help-big { width: 100%; font-size: 20px; padding: 18px; background: var(--gold); border-color: var(--gold); margin: 6px 0 4px; }
+
+  /* requests */
+  .req { border-right: 5px solid var(--gold); }
+  .req.ok { border-right-color: var(--green); opacity: .8; }
+  .req .when { font-size: 14px; color: var(--muted); }
+  .req .what { font-size: 19px; margin: 4px 0 12px; }
+
+  /* sheet */
+  .veil { position: fixed; inset: 0; background: rgba(43,38,33,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
+  .sheet { background: var(--card); width: 100%; max-width: 560px; border-radius: 22px 22px 0 0; padding: 20px 16px 24px; max-height: 92vh; overflow: auto; animation: up .25s ease; }
+  @keyframes up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .chip { font-size: 16px; padding: 9px 13px; min-height: 44px; border-radius: 99px; background: #fff; color: var(--ink); border: 2px solid var(--line); }
+  .chip[aria-pressed=true] { border-color: var(--green); background: var(--green-soft); }
+
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; z-index: 20; font-size: 16px; max-width: 90vw; }
+  .err { background: var(--red-soft); color: var(--red); border-radius: 12px; padding: 12px 14px; margin: 10px 0; }
+
+  .loading { text-align: center; padding: 80px 0; color: var(--muted); }
+  .tree { font-size: 54px; line-height: 1; }
+
+  /* admin */
+  .adm-step { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 10px 0; background: #fff; }
+  .adm-step textarea { min-height: 64px; font-size: 16px; }
+  .adm-step input[type=text] { font-size: 16px; }
+  .check { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 16px; }
+  .check input { width: 22px; height: 22px; accent-color: var(--green); }
+
+  footer { text-align: center; font-size: 13px; color: var(--muted); padding: 18px 16px 28px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<main id="app"><div class="loading"><div class="tree">🌳</div><p>טוען...</p></div></main>
+<footer>הפלטפורמה נבנתה ע״י <a href="https://www.linkedin.com/in/relly-brill/" target="_blank" rel="noopener">רלי בריל, אמא עסוקה</a></footer>
+
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var S = {};          // current page state
+  var MODE, TOKEN;
+  // Backend (Google Apps Script). Inside Google we use google.script.run; elsewhere (GitHub Pages) we POST JSON.
+  var API_URL = 'https://script.google.com/macros/s/AKfycbywJk5Q5hHRYQLgmWrMUwoPKB4dw9ybKzSMvv4w1RjlF3AXSrwynwEVyf4VzQpHaYgZ/exec';
+  var GAS = typeof google !== 'undefined' && google.script && google.script.run;
+
+  /* ── helpers ── */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function call(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    if (!GAS) {
+      return fetch(API_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: fn, args: args })
+      }).then(function (r) { return r.json(); }, function () { throw new Error('אין חיבור לאינטרנט כרגע, נסו שוב'); })
+        .then(function (j) { if (!j.ok) throw new Error(j.error); return j.data; });
+    }
+    return new Promise(function (ok, bad) {
+      var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { bad(e); });
+      r[fn].apply(r, args);
+    });
+  }
+  function errText(e) { return (e && e.message ? e.message : String(e)).replace(/^Error:\s*/, '') || 'משהו השתבש, נסו שוב'; }
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; t.setAttribute('role', 'status');
+    document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600);
+  }
+  function daysLeft(due, today) {
+    var a = new Date(today + 'T00:00:00'), b = new Date(due + 'T00:00:00');
+    return Math.round((b - a) / 86400000);
+  }
+  function fmtDue(due) {
+    var p = due.split('-'); return Number(p[2]) + '.' + Number(p[1]);
+  }
+  function countdown(due, today, finished) {
+    if (finished) return '<span class="badge done">✓ הושלם</span>';
+    var d = daysLeft(due, today);
+    var cls = d < 0 ? 'late' : d <= 7 ? 'soon' : '';
+    var t = d > 1 ? 'עוד ' + d + ' ימים' : d === 1 ? 'מחר!' : d === 0 ? 'היום!' : 'המועד עבר';
+    return '<span class="badge ' + cls + '">' + t + '</span>';
+  }
+  function partStats(p, done, personal) {
+    var mine = personal.filter(function (x) { return x.part === p.part; });
+    var total = p.steps.length + mine.length;
+    var n = p.steps.filter(function (s) { return done.indexOf(s.id) >= 0; }).length +
+            mine.filter(function (x) { return x.done; }).length;
+    return { n: n, total: total, finished: total > 0 && n === total };
+  }
+  function bar(n, total) { var w = total ? Math.round(100 * n / total) : 0; return '<div class="bar" role="progressbar" aria-valuenow="' + w + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + w + '%"></i></div>'; }
+  function waLink(text) { return 'https://wa.me/?text=' + encodeURIComponent(text); }
+  function copy(text) {
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('הקישור הועתק ✓'); } catch (e) { prompt('להעתקה:', text); }
+      ta.remove();
+    }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('הקישור הועתק ✓'); }, fallback);
+    else fallback();
+  }
+  function showError(msg) {
+    app.innerHTML = '<div class="center" style="padding-top:50px"><div class="tree">🍂</div><h1>אופס</h1><p>' + esc(msg) + '</p>' +
+      '<p class="muted">אם הגעתם מקישור במייל, נסו לפתוח אותו שוב.</p></div>';
+  }
+  function currentPart(plan, done, personal, today) {
+    for (var i = 0; i < plan.length; i++) {
+      var st = partStats(plan[i], done, personal);
+      if (!st.finished && daysLeft(plan[i].due, today) >= 0) return plan[i].part;
+    }
+    return null;
+  }
+
+  /* ── router ── */
+  function getParams(cb) {
+    if (GAS && google.script.url) { google.script.url.getLocation(function (loc) { cb(loc.parameter || {}); }); return; }
+    var p = {}; new URLSearchParams(location.search).forEach(function (v, k) { p[k] = v; }); cb(p);
+  }
+  getParams(function (q) {
+    if (q.k) { MODE = 'kid'; TOKEN = q.k; loadKid(); }
+    else if (q.p) { MODE = 'parent'; TOKEN = q.p; loadParent(); }
+    else if (q.a) { MODE = 'admin'; TOKEN = q.a; loadAdmin(); }
+    else renderSignup();
+  });
+
+  /* ═════════════ SIGNUP ═════════════ */
+  function renderSignup() {
+    app.innerHTML =
+      '<div class="center"><div class="tree">🌳</div></div>' +
+      '<h1 class="center">המסע שלי</h1>' +
+      '<p class="sub center">מעקב עבודת השורשים – שכבה ז׳</p>' +
+      '<div class="card">' +
+        '<p><b>איך זה עובד?</b></p>' +
+        '<p>1. כותבים כאן מייל ואת השם של הילד/ה.</p>' +
+        '<p>2. מקבלים במייל שני קישורים: אחד לכם ואחד לילד/ה.</p>' +
+        '<p>3. הילד/ה מסמנים מה עשו, ומבקשים מכם רק מה שבאמת צריך.</p>' +
+      '</div>' +
+      '<form id="f" class="card" novalidate>' +
+        '<label class="field" for="em">המייל שלכם</label>' +
+        '<input id="em" type="email" inputmode="email" autocomplete="email" dir="ltr" placeholder="name@gmail.com" required>' +
+        '<label class="field" for="kn">השם הפרטי של הילד/ה</label>' +
+        '<input id="kn" type="text" autocomplete="off" maxlength="30" required>' +
+        '<div id="ferr"></div>' +
+        '<button class="wide" style="margin-top:18px" id="go">שלחו לי את הקישורים</button>' +
+        '<p class="muted" style="font-size:14px;margin-top:14px">נשמרים רק המייל והשם הפרטי, ורק כדי לשלוח לכם עדכונים על העבודה. לא משתפים אותם עם אף אחד.</p>' +
+      '</form>';
+    document.getElementById('f').onsubmit = function (ev) {
+      ev.preventDefault();
+      var em = document.getElementById('em').value.trim(), kn = document.getElementById('kn').value.trim();
+      var fe = document.getElementById('ferr'); fe.innerHTML = '';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { fe.innerHTML = '<div class="err">כתובת המייל לא נראית תקינה</div>'; return; }
+      if (!kn) { fe.innerHTML = '<div class="err">צריך לכתוב את השם של הילד/ה</div>'; return; }
+      var b = document.getElementById('go'); b.disabled = true; b.textContent = 'שולח...';
+      call('signup', em, kn).then(function (r) { renderSignedUp(r, em); }, function (e) {
+        fe.innerHTML = '<div class="err">' + esc(errText(e)) + '</div>'; b.disabled = false; b.textContent = 'שלחו לי את הקישורים';
+      });
+    };
+  }
+
+  function renderSignedUp(r, em) {
+    app.innerHTML =
+      '<div class="center"><div class="tree">📬</div><h1>מעולה!</h1>' +
+      '<p>שלחנו ל־<b dir="ltr">' + esc(em) + '</b> מייל עם שני הקישורים.</p>' +
+      '<p class="muted">לא הגיע? כדאי להציץ בתיקיית הספאם / קידומי מכירות.</p></div>' +
+      '<div class="card"><p><b>אפשר גם עכשיו:</b></p>' +
+      '<button class="wide" id="toParent" style="margin-top:8px">🔑 לדף שלי</button></div>';
+    document.getElementById('toParent').onclick = function () {
+      if (!GAS) { location.href = '?p=' + r.parentToken; return; }
+      MODE = 'parent'; TOKEN = r.parentToken; loadParent();
+    };
+  }
+
+  /* ═════════════ KID ═════════════ */
+  function loadKid() {
+    call('getKid', TOKEN).then(function (d) { S = d; renderKid(); }, function (e) { showError(errText(e)); });
+  }
+
+  function reqForStep(id) {
+    for (var i = 0; i < S.requests.length; i++) if (S.requests[i].stepId === id) return S.requests[i];
+    return null;
+  }
+
+  function renderKid(keepOpen) {
+    var openParts = keepOpen || {};
+    if (!keepOpen) { var cp = currentPart(S.plan, S.done, S.personal, S.today); if (cp) openParts[cp] = true; }
+    var allN = 0, allT = 0;
+    S.plan.forEach(function (p) { var st = partStats(p, S.done, S.personal); allN += st.n; allT += st.total; });
+
+    var h = '<h1>היי ' + esc(S.kidName) + ' 👋</h1>' +
+      '<p class="sub">זה המסע שלך בעבודת השורשים. מסמנים ✓ כשמסיימים שלב.</p>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><b>ההתקדמות שלי</b><span>' + allN + ' מתוך ' + allT + '</span></div>' +
+      '<div style="margin-top:10px">' + bar(allN, allT) + '</div></div>' +
+      '<button class="help-big" data-ask="">🏠 צריך משהו מהבית</button>';
+
+    S.plan.forEach(function (p) {
+      var st = partStats(p, S.done, S.personal);
+      var mine = S.personal.filter(function (x) { return x.part === p.part; });
+      h += '<details class="part" data-part="' + p.part + '"' + (openParts[p.part] ? ' open' : '') + '>' +
+        '<summary><div class="part-top"><span class="part-title">' + esc(p.title) + '</span>' +
+        '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+        '<div class="part-meta">' + countdown(p.due, S.today, st.finished) + '<span class="muted">הגשה ' + fmtDue(p.due) + '</span>' +
+        (st.total ? '<span class="muted">· ' + st.n + '/' + st.total + '</span>' : '') + '</div>' +
+        (st.total ? bar(st.n, st.total) : '') + '</summary><div class="part-body">';
+      if (p.note) h += '<div class="note">' + esc(p.note) + '</div>';
+      p.steps.forEach(function (s) {
+        var isDone = S.done.indexOf(s.id) >= 0;
+        var rq = reqForStep(s.id);
+        h += '<div class="step' + (isDone ? ' is-done' : '') + '">' +
+          '<input type="checkbox" id="c' + s.id + '" data-step="' + s.id + '"' + (isDone ? ' checked' : '') + '>' +
+          '<div class="txt"><span><label for="c' + s.id + '">' + esc(s.text) + '</label></span>';
+        if (s.home && !isDone) {
+          h += '<div class="tools">';
+          if (rq && rq.status === 'open') h += '<span class="req-state">⏳ ביקשת מההורים</span>';
+          else if (rq) h += '<span class="req-state ok">✓ ההורים טיפלו</span>';
+          if (!rq || rq.status !== 'open') h += '<button class="home-btn" data-ask="' + s.id + '">🏠 לבקש מהבית</button>';
+          h += '</div>';
+        }
+        h += '</div></div>';
+      });
+      mine.forEach(function (x) {
+        h += '<div class="step' + (x.done ? ' is-done' : '') + '">' +
+          '<input type="checkbox" id="c' + x.id + '" data-step="' + x.id + '"' + (x.done ? ' checked' : '') + '>' +
+          '<div class="txt"><span><label for="c' + x.id + '">' + esc(x.text) + '</label></span> <span class="mine">(שלב שלי)</span></div>' +
+          '<button class="x" data-del="' + x.id + '" aria-label="למחוק את השלב">✕</button></div>';
+      });
+      if (!p.steps.length && !mine.length && !p.note) h += '<p class="muted">עוד אין שלבים בחלק הזה.</p>';
+      if (st.finished) h += '<div class="cheer">🎉 כל הכבוד! סיימת את החלק הזה. לא לשכוח להגיש!</div>';
+      h += '<div class="add-own"><button class="link" data-addopen="' + p.part + '">+ להוסיף שלב משלי</button>' +
+        '<form class="row hidden" data-addform="' + p.part + '"><input type="text" maxlength="150" placeholder="למשל: להתקשר לסבתא"><button class="small">הוספה</button></form></div>';
+      h += '</div></details>';
+    });
+
+    if (S.requests.length) {
+      h += '<h2>הבקשות שלי מהבית</h2>';
+      S.requests.slice(0, 20).forEach(function (r) {
+        h += '<div class="card req' + (r.status === 'done' ? ' ok' : '') + '"><div class="what">' + esc(r.text) + '</div>' +
+          '<span class="req-state' + (r.status === 'done' ? ' ok' : '') + '">' + (r.status === 'done' ? '✓ ההורים טיפלו' : '⏳ מחכה להורים') + '</span></div>';
+      });
+    }
+    h += '<p class="muted center" style="font-size:14px;margin-top:26px">טיפ: שמרו את הדף הזה במסך הבית של הטלפון ⭐</p>';
+    app.innerHTML = h;
+    bindKid();
+  }
+
+  function openParts() {
+    var o = {}; app.querySelectorAll('details.part[open]').forEach(function (d) { o[d.getAttribute('data-part')] = true; }); return o;
+  }
+
+  function bindKid() {
+    app.querySelectorAll('input[data-step]').forEach(function (cb) {
+      cb.onchange = function () {
+        var id = cb.getAttribute('data-step'), v = cb.checked;
+        var own = S.personal.filter(function (x) { return x.id === id; })[0];
+        if (own) own.done = v;
+        else { S.done = S.done.filter(function (x) { return x !== id; }); if (v) S.done.push(id); }
+        var keep = openParts();
+        renderKid(keep);
+        call('toggleStep', TOKEN, id, v).catch(function (e) { toast('לא נשמר: ' + errText(e)); loadKid(); });
+      };
+    });
+    app.querySelectorAll('[data-ask]').forEach(function (b) {
+      b.onclick = function (ev) { ev.preventDefault(); openAsk(b.getAttribute('data-ask')); };
+    });
+    app.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('למחוק את השלב הזה?')) return;
+        var id = b.getAttribute('data-del');
+        S.personal = S.personal.filter(function (x) { return x.id !== id; });
+        var keep = openParts(); renderKid(keep);
+        call('removePersonal', TOKEN, id).catch(function (e) { toast(errText(e)); loadKid(); });
+      };
+    });
+    app.querySelectorAll('[data-addopen]').forEach(function (b) {
+      b.onclick = function () {
+        var f = app.querySelector('[data-addform="' + b.getAttribute('data-addopen') + '"]');
+        f.classList.remove('hidden'); b.classList.add('hidden'); f.querySelector('input').focus();
+      };
+    });
+    app.querySelectorAll('[data-addform]').forEach(function (f) {
+      f.onsubmit = function (ev) {
+        ev.preventDefault();
+        var part = Number(f.getAttribute('data-addform')), inp = f.querySelector('input'), txt = inp.value.trim();
+        if (!txt) return;
+        var btn = f.querySelector('button'); btn.disabled = true;
+        call('addPersonal', TOKEN, part, txt).then(function (item) {
+          S.personal.push(item); var keep = openParts(); keep[part] = true; renderKid(keep);
+        }, function (e) { btn.disabled = false; toast(errText(e)); });
+      };
+    });
+  }
+
+  var CHIPS = [
+    ['🗣️', 'לשבת איתי לשיחה / ראיון'],
+    ['📷', 'תמונות של המשפחה'],
+    ['📄', 'פרטים: שמות, תאריכים, מקומות'],
+    ['👵', 'לדבר עם סבא / סבתא'],
+    ['🖨️', 'להדפיס משהו'],
+    ['💻', 'עזרה במחשב'],
+    ['🚗', 'הסעה']
+  ];
+
+  function openAsk(stepId) {
+    var step = null;
+    S.plan.forEach(function (p) { p.steps.forEach(function (s) { if (s.id === stepId) step = s; }); });
+    var veil = document.createElement('div'); veil.className = 'veil';
+    var h = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="askT">' +
+      '<h2 id="askT" style="margin-top:0">🏠 מה צריך מהבית?</h2>';
+    if (step) h += '<p class="muted" style="font-size:15px">בשביל השלב: ' + esc(step.text) + '</p>';
+    else {
+      h += '<div class="chips">';
+      CHIPS.forEach(function (c, i) { h += '<button type="button" class="chip" aria-pressed="false" data-chip="' + i + '">' + c[0] + ' ' + c[1] + '</button>'; });
+      h += '</div>';
+    }
+    h += '<label class="field" for="askTx">' + (step ? 'אפשר לשנות את הבקשה:' : 'מה בדיוק צריך? (אפשר לכתוב במילים שלך)') + '</label>' +
+      '<textarea id="askTx" maxlength="400">' + esc(step ? step.ask : '') + '</textarea>' +
+      '<div class="row" style="margin-top:16px"><button id="askGo" style="flex:1">לשלוח להורים 📨</button><button class="ghost" id="askNo">ביטול</button></div>' +
+      '<p class="muted" style="font-size:14px">ההורים יקבלו מייל עם הבקשה.</p></div>';
+    veil.innerHTML = h;
+    document.body.appendChild(veil);
+    var tx = veil.querySelector('#askTx');
+    function close() { veil.remove(); }
+    veil.onclick = function (e) { if (e.target === veil) close(); };
+    veil.querySelector('#askNo').onclick = close;
+    veil.querySelectorAll('[data-chip]').forEach(function (c) {
+      c.onclick = function () {
+        veil.querySelectorAll('[data-chip]').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+        c.setAttribute('aria-pressed', 'true');
+        var label = CHIPS[Number(c.getAttribute('data-chip'))][1];
+        tx.value = label + ': '; tx.focus();
+      };
+    });
+    veil.querySelector('#askGo').onclick = function () {
+      var t = tx.value.trim();
+      if (!t) { tx.focus(); return; }
+      var b = this; b.disabled = true; b.textContent = 'שולח...';
+      call('askHome', TOKEN, stepId || '', t).then(function (r) {
+        S.requests.unshift(r); close(); var keep = openParts(); renderKid(keep); toast('נשלח להורים ✓');
+      }, function (e) { b.disabled = false; b.textContent = 'לשלוח להורים 📨'; toast(errText(e)); });
+    };
+    setTimeout(function () { (step ? tx : veil.querySelector('.chip') || tx).focus(); }, 50);
+  }
+
+  /* ═════════════ PARENT ═════════════ */
+  function loadParent() {
+    app.innerHTML = '<div class="loading"><div class="tree">🌳</div><p>טוען...</p></div>';
+    call('getParent', TOKEN).then(function (d) { S = d; renderParent(); }, function (e) { showError(errText(e)); });
+  }
+
+  function renderParent() {
+    var open = S.requests.filter(function (r) { return r.status === 'open'; });
+    var closed = S.requests.filter(function (r) { return r.status !== 'open'; });
+    var name = esc(S.kidName);
+    var h = '<h1>המסע של ' + name + '</h1>' +
+      '<p class="sub">הרעיון: ' + name + ' מובילים את העבודה, ואתם רק עונים לבקשות.</p>';
+
+    h += '<h2>מה ' + name + ' צריכים ממך</h2>';
+    if (!open.length) h += '<div class="card center muted">אין כרגע בקשות פתוחות 🙌</div>';
+    open.forEach(function (r) {
+      h += '<div class="card req"><div class="when">' + esc(r.createdAt) + '</div><div class="what">' + esc(r.text) + '</div>' +
+        '<button class="wide" data-handled="' + esc(r.id) + '">טיפלתי ✓</button></div>';
+    });
+
+    h += '<h2>איפה עומדים</h2>';
+    S.plan.forEach(function (p) {
+      var st = partStats(p, S.done, S.personal);
+      var mine = S.personal.filter(function (x) { return x.part === p.part; });
+      h += '<details class="part"><summary><div class="part-top"><span class="part-title">' + esc(p.title) + '</span>' +
+        '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+        '<div class="part-meta">' + countdown(p.due, S.today, st.finished) + '<span class="muted">הגשה ' + fmtDue(p.due) + '</span>' +
+        (st.total ? '<span class="muted">· ' + st.n + '/' + st.total + '</span>' : '') + '</div>' +
+        (st.total ? bar(st.n, st.total) : '') + '</summary><div class="part-body">';
+      if (p.note) h += '<div class="note">' + esc(p.note) + '</div>';
+      p.steps.forEach(function (s) {
+        var d = S.done.indexOf(s.id) >= 0;
+        h += '<div class="step' + (d ? ' is-done' : '') + '"><span style="font-size:22px;width:30px;flex:none">' + (d ? '✅' : '⬜') + '</span><div class="txt"><span>' + esc(s.text) + '</span></div></div>';
+      });
+      mine.forEach(function (x) {
+        h += '<div class="step' + (x.done ? ' is-done' : '') + '"><span style="font-size:22px;width:30px;flex:none">' + (x.done ? '✅' : '⬜') + '</span><div class="txt"><span>' + esc(x.text) + '</span> <span class="mine">(שלב אישי)</span></div></div>';
+      });
+      if (!p.steps.length && !mine.length) h += '<p class="muted">עוד אין שלבים בחלק הזה.</p>';
+      h += '</div></details>';
+    });
+
+    var kidMsg = 'הקישור שלך למסע השורשים 🌳 (כדאי לשמור במסך הבית):\n' + S.kidUrl;
+    h += '<h2>הקישור של ' + name + '</h2><div class="card">' +
+      '<p>אם עוד לא שלחתם, או שהקישור הלך לאיבוד:</p>' +
+      '<a class="btn wide" href="' + waLink(kidMsg) + '" target="_blank" rel="noopener">📲 לשלוח בוואטסאפ</a>' +
+      '<button class="ghost wide" style="margin-top:10px" id="cpKid">להעתיק את הקישור</button></div>';
+
+    if (closed.length) {
+      h += '<details class="part" style="margin-top:24px"><summary><b>בקשות שכבר טיפלתם בהן (' + closed.length + ')</b></summary><div class="part-body">';
+      closed.forEach(function (r) { h += '<div class="step is-done"><span>✓</span><div class="txt"><span>' + esc(r.text) + '</span></div></div>'; });
+      h += '</div></details>';
+    }
+    h += '<p class="muted center" style="font-size:14px;margin-top:26px">את הדף הזה כדאי לשמור. כשתגיע בקשה חדשה, תקבלו מייל.</p>';
+    app.innerHTML = h;
+
+    app.querySelectorAll('[data-handled]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-handled'); b.disabled = true;
+        call('markHandled', TOKEN, id).then(function () {
+          S.requests.forEach(function (r) { if (r.id === id) r.status = 'done'; });
+          renderParent(); toast('מעולה! ' + S.kidName + ' יראו שטיפלת ✓');
+        }, function (e) { b.disabled = false; toast(errText(e)); });
+      };
+    });
+    document.getElementById('cpKid').onclick = function () { copy(S.kidUrl); };
+  }
+
+  /* ═════════════ ADMIN ═════════════ */
+  function loadAdmin() {
+    call('getAdmin', TOKEN).then(function (d) { S = d; renderAdmin(); }, function (e) { showError(errText(e)); });
+  }
+
+  function renderAdmin(openPart) {
+    var h = '<h1>ניהול – המסע שלי</h1>' +
+      '<p class="sub">כל שינוי כאן מופיע מיד אצל כל הילדים.</p>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><b>משפחות שנרשמו</b><span style="font-size:24px;font-weight:700">' + S.families + '</span></div></div>' +
+      '<div class="card"><p><b>קישור ההרשמה להורים</b></p>' +
+      '<a class="btn wide" target="_blank" rel="noopener" href="' + waLink('הורים יקרים, בניתי כלי קטן שעוזר לילדים לנהל לבד את עבודת השורשים 🌳\nנרשמים כאן עם מייל ושם הילד/ה (דקה אחת):\n' + S.url) + '">📲 לשלוח לקבוצת ההורים</a>' +
+      '<button class="ghost wide" style="margin-top:10px" id="cpSign">להעתיק את הקישור</button></div>';
+
+    S.plan.forEach(function (p) {
+      h += '<details class="part" data-part="' + p.part + '"' + (openPart === p.part ? ' open' : '') + '><summary><div class="part-top"><span class="part-title">' + esc(p.title) + '</span>' +
+        '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
+        '<div class="part-meta"><span class="muted">הגשה ' + fmtDue(p.due) + ' · ' + p.steps.length + ' שלבים</span></div></summary><div class="part-body">' +
+        '<form data-partform="' + p.part + '">' +
+          '<label class="field">שם החלק</label><input type="text" name="title" value="' + esc(p.title) + '">' +
+          '<label class="field">תאריך הגשה</label><input type="date" name="due" value="' + esc(p.due) + '">' +
+          '<label class="field">הערה לילדים (לא חובה)</label><input type="text" name="note" value="' + esc(p.note) + '">' +
+          '<button class="small" style="margin-top:10px">שמירת פרטי החלק</button></form>' +
+        '<h2 style="font-size:18px">השלבים</h2>';
+      p.steps.forEach(function (s, i) { h += stepEditor(p.part, s, i, p.steps.length); });
+      h += '<details style="margin-top:12px"><summary class="btn ghost wide" style="list-style:none">+ שלב חדש</summary>' + stepEditor(p.part, null) + '</details>';
+      h += '</div></details>';
+    });
+    h += '<button class="ghost wide" style="margin-top:14px" id="addPart">+ להוסיף חלק</button>';
+    app.innerHTML = h;
+    bindAdmin();
+  }
+
+  function stepEditor(part, s, i, n) {
+    var id = s ? s.id : '';
+    return '<form class="adm-step" data-stepform="' + part + '" data-id="' + id + '">' +
+      '<textarea name="text" placeholder="מה הילד/ה צריכים לעשות?">' + esc(s ? s.text : '') + '</textarea>' +
+      '<label class="check"><input type="checkbox" name="home"' + (s && s.home ? ' checked' : '') + '> 🏠 צריך עזרה מהבית</label>' +
+      '<input type="text" name="ask" placeholder="הבקשה המוכנה להורים" value="' + esc(s ? s.ask : '') + '"' + (s && s.home ? '' : ' class="hidden"') + '>' +
+      '<div class="row" style="margin-top:10px"><button class="small">' + (s ? 'שמירה' : 'הוספה') + '</button>' +
+      (s ? '<button type="button" class="small ghost" data-move="-1" aria-label="למעלה"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+           '<button type="button" class="small ghost" data-move="1" aria-label="למטה"' + (i === n - 1 ? ' disabled' : '') + '>↓</button>' +
+           '<button type="button" class="small ghost" data-rm style="color:var(--red);border-color:var(--red)">מחיקה</button>' : '') +
+      '</div></form>';
+  }
+
+  function bindAdmin() {
+    document.getElementById('cpSign').onclick = function () { copy(S.url); };
+    function after(part) { return function (plan) { S.plan = plan; renderAdmin(part); toast('נשמר ✓'); }; }
+    function fail(btn) { return function (e) { if (btn) btn.disabled = false; toast(errText(e)); }; }
+    app.querySelectorAll('[data-partform]').forEach(function (f) {
+      f.onsubmit = function (ev) {
+        ev.preventDefault(); var part = Number(f.getAttribute('data-partform')), b = f.querySelector('button'); b.disabled = true;
+        call('savePart', TOKEN, part, f.title.value, f.due.value, f.note.value).then(after(part), fail(b));
+      };
+    });
+    app.querySelectorAll('[data-stepform]').forEach(function (f) {
+      var part = Number(f.getAttribute('data-stepform')), id = f.getAttribute('data-id');
+      f.home.onchange = function () { f.ask.classList.toggle('hidden', !f.home.checked); };
+      f.onsubmit = function (ev) {
+        ev.preventDefault(); var b = f.querySelector('button'); b.disabled = true;
+        call('saveStep', TOKEN, { id: id, part: part, text: f.text.value, home: f.home.checked, ask: f.ask.value }).then(after(part), fail(b));
+      };
+      f.querySelectorAll('[data-move]').forEach(function (b) {
+        b.onclick = function () { b.disabled = true; call('moveStep', TOKEN, id, Number(b.getAttribute('data-move'))).then(after(part), fail(b)); };
+      });
+      var rm = f.querySelector('[data-rm]');
+      if (rm) rm.onclick = function () {
+        if (!confirm('למחוק את השלב הזה אצל כל הילדים?')) return;
+        rm.disabled = true; call('deleteStep', TOKEN, id).then(after(part), fail(rm));
+      };
+    });
+    document.getElementById('addPart').onclick = function () {
+      this.disabled = true; call('addPart', TOKEN).then(function (plan) { S.plan = plan; renderAdmin(plan[plan.length - 1].part); }, fail(this));
+    };
+  }
+})();
+</script>
+</body>
+</html>
