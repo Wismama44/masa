@@ -86,6 +86,9 @@
   .badge.done { background: var(--green); color: #fff; }
   .part-body { padding: 0 16px 16px; border-top: 1px solid var(--line); }
   .note { background: var(--gold-soft); border-radius: 12px; padding: 12px 14px; margin: 14px 0 4px; }
+  a.ext { color: var(--green); font-weight: 500; text-decoration: underline; overflow-wrap: anywhere; }
+  ul.about { margin: 12px 0 0; padding: 0; list-style: none; }
+  ul.about li { padding: 6px 0; }
 
   .step { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-bottom: 1px dashed var(--line); }
   .step:last-of-type { border-bottom: none; }
@@ -176,6 +179,16 @@
     return new Promise(function (ok, bad) {
       var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) { bad(e); });
       r[fn].apply(r, args);
+    });
+  }
+  // Escapes text and turns web addresses (e.g. classroom.google.com) into tappable links.
+  function linkify(s) {
+    return esc(s).replace(/\b(https?:\/\/[^\s<]+|(?:[a-z0-9-]+\.)+(?:com|org|net|co\.il|org\.il|gov\.il|ac\.il)(?:\/[^\s<]*)?)/gi, function (u) {
+      var trail = (u.match(/[.,;:!?)]+$/) || [''])[0]; u = u.slice(0, u.length - trail.length);
+      var href = /^https?:/i.test(u) ? u : 'https://' + u;
+      var cls = /classroom\.google\.com/i.test(u);
+      return '<a class="ext"' + (cls ? ' style="white-space:nowrap"' : '') + ' href="' + href + '" target="_blank" rel="noopener">' +
+        (cls ? '🎓 כניסה לכיתה בקלאסרום' : u) + '</a>' + trail;
     });
   }
   function errText(e) { return (e && e.message ? e.message : String(e)).replace(/^Error:\s*/, '') || 'משהו השתבש, נסו שוב'; }
@@ -387,13 +400,13 @@
         '<div class="part-meta">' + countdown(p.due, S.today, st.finished) + '<span class="muted">הגשה ' + fmtDue(p.due) + '</span>' +
         (st.total ? '<span class="muted">· ' + st.n + '/' + st.total + '</span>' : '') + '</div>' +
         (st.total ? bar(st.n, st.total) : '') + '</summary><div class="part-body">';
-      if (p.note) h += '<div class="note">' + esc(p.note) + '</div>';
+      if (p.note) h += '<div class="note">' + linkify(p.note) + '</div>';
       p.steps.forEach(function (s) {
         var isDone = S.done.indexOf(s.id) >= 0;
         var rq = reqForStep(s.id);
         h += '<div class="step' + (isDone ? ' is-done' : '') + '">' +
           '<input type="checkbox" id="c' + s.id + '" data-step="' + s.id + '"' + (isDone ? ' checked' : '') + '>' +
-          '<div class="txt"><span><label for="c' + s.id + '">' + esc(s.text) + '</label></span>';
+          '<div class="txt"><span><label for="c' + s.id + '">' + linkify(s.text) + '</label></span>';
         if (s.home && !isDone) {
           h += '<div class="tools">';
           if (rq && rq.status === 'open') h += '<span class="req-state">⏳ ביקשת מההורים</span>';
@@ -553,6 +566,26 @@
     var h = '<h1>המסע של ' + name + '</h1>' +
       '<p class="sub">הרעיון: ' + name + ' מובילים את העבודה, ואתם רק עונים לבקשות.</p>';
 
+    // What's coming up: the nearest deadline that hasn't passed, plus that part's note (e.g. a museum visit).
+    var next = S.plan.filter(function (p) { return daysLeft(p.due, S.today) >= 0; })
+      .sort(function (a, b) { return a.due < b.due ? -1 : 1; })[0];
+    if (next) {
+      var nst = partStats(next, S.done, S.personal);
+      h += '<div class="card"><b>📅 מה קרוב</b>' +
+        '<div class="part-meta" style="margin-bottom:0">' + esc(next.title) + ' – הגשה ' + fmtDue(next.due) + ' ' + countdown(next.due, S.today, nst.finished) + '</div>' +
+        (next.note ? '<div class="note">' + linkify(next.note) + '</div>' : '') + '</div>';
+    }
+
+    h += '<details class="part"><summary><div class="part-top"><span class="part-title" style="font-size:18px">💡 מה יש ל' + name + ' בדף שלהם?</span>' +
+      '<svg class="chev" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></summary>' +
+      '<div class="part-body"><ul class="about">' +
+      '<li>✅ רשימת כל השלבים של העבודה, לפי חלקים, עם ספירה לאחור לכל הגשה. מסמנים כשמסיימים.</li>' +
+      '<li>🏠 כפתור "לבקש מהבית" ליד שלבים שצריך בהם עזרה. הבקשה מגיעה אליכם במייל ומופיעה כאן למעלה.</li>' +
+      '<li>🔗 קישורים ישירים, למשל לקלאסרום של הכיתה (עם קוד ההצטרפות), שם מעלים את חלקי העבודה.</li>' +
+      '<li>✏️ אפשרות להוסיף שלבים אישיים משלהם.</li>' +
+      '<li>📌 עדכונים על תאריכים ופעילויות, למשל סדנה או סיור.</li></ul>' +
+      '<p class="muted" style="margin:8px 0 0">את כל השלבים ואת ההתקדמות שלהם רואים כאן למטה, ב"איפה עומדים".</p></div></details>';
+
     h += '<h2>מה ' + name + ' צריכים ממך</h2>';
     if (!open.length) h += '<div class="card center muted">אין כרגע בקשות פתוחות 🙌</div>';
     open.forEach(function (r) {
@@ -569,10 +602,10 @@
         '<div class="part-meta">' + countdown(p.due, S.today, st.finished) + '<span class="muted">הגשה ' + fmtDue(p.due) + '</span>' +
         (st.total ? '<span class="muted">· ' + st.n + '/' + st.total + '</span>' : '') + '</div>' +
         (st.total ? bar(st.n, st.total) : '') + '</summary><div class="part-body">';
-      if (p.note) h += '<div class="note">' + esc(p.note) + '</div>';
+      if (p.note) h += '<div class="note">' + linkify(p.note) + '</div>';
       p.steps.forEach(function (s) {
         var d = S.done.indexOf(s.id) >= 0;
-        h += '<div class="step' + (d ? ' is-done' : '') + '"><span style="font-size:22px;width:30px;flex:none">' + (d ? '✅' : '⬜') + '</span><div class="txt"><span>' + esc(s.text) + '</span></div></div>';
+        h += '<div class="step' + (d ? ' is-done' : '') + '"><span style="font-size:22px;width:30px;flex:none">' + (d ? '✅' : '⬜') + '</span><div class="txt"><span>' + linkify(s.text) + '</span></div></div>';
       });
       mine.forEach(function (x) {
         h += '<div class="step' + (x.done ? ' is-done' : '') + '"><span style="font-size:22px;width:30px;flex:none">' + (x.done ? '✅' : '⬜') + '</span><div class="txt"><span>' + esc(x.text) + '</span> <span class="mine">(שלב אישי)</span></div></div>';
@@ -627,7 +660,7 @@
         '<form data-partform="' + p.part + '">' +
           '<label class="field">שם החלק</label><input type="text" name="title" value="' + esc(p.title) + '">' +
           '<label class="field">תאריך הגשה</label><input type="date" name="due" value="' + esc(p.due) + '">' +
-          '<label class="field">הערה לילדים (לא חובה)</label><input type="text" name="note" value="' + esc(p.note) + '">' +
+          '<label class="field">הערה לילדים ולהורים, למשל תאריך של פעילות (לא חובה)</label><input type="text" name="note" value="' + esc(p.note) + '">' +
           '<button class="small" style="margin-top:10px">שמירת פרטי החלק</button></form>' +
         '<h2 style="font-size:18px">השלבים</h2>';
       p.steps.forEach(function (s, i) { h += stepEditor(p.part, s, i, p.steps.length); });
